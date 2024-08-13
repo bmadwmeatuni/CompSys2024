@@ -1,2 +1,4 @@
 .DS_Store
 csadelaide-nand2tetris/
+*.cmp
+*.tst
