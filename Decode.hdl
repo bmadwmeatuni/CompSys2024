@@ -25,45 +25,20 @@ CHIP Decode {
         j1, j2, j3;         // Jump bits (from bits 2-0 in C-instruction)
 
 PARTS:
-    // Determine if the instruction is A-type (type = 0) or C-type (type = 1)
-    Or(a=in[15], b=false, out=type);  // If bit 15 is 1, it's a C-instruction (type = 1)
-
-    // For C-instructions, extract the control bits
-    And(a=type, b=in[12], out=a);     // ALU A/M bit (bit 12)
-    
-    // ALU control bits (bits 11-6 in C-instruction)
-    And(a=type, b=in[11], out=c1);
-    And(a=type, b=in[10], out=c2);
-    And(a=type, b=in[9], out=c3);
-    And(a=type, b=in[8], out=c4);
-    And(a=type, b=in[7], out=c5);
-    And(a=type, b=in[6], out=c6);
-
-    // Destination bits (bits 5-3 in C-instruction)
-    And(a=type, b=in[5], out=d1);
-    And(a=type, b=in[4], out=d2);
-    And(a=type, b=in[3], out=d3);
-
-    // Jump bits (bits 2-0 in C-instruction)
-    And(a=type, b=in[2], out=j1);
-    And(a=type, b=in[1], out=j2);
-    And(a=type, b=in[0], out=j3);
-
-    // For A-instructions, d1 is set to 1, and all other outputs are 0
-    Not(in=type, out=notType); // notType is 1 for A-instructions
-    
-    And(a=notType, b=true, out=d1);  // A-instruction sets d1 = 1
-    And(a=notType, b=false, out=d2); // A-instruction sets d2 = 0
-    And(a=notType, b=false, out=d3); // A-instruction sets d3 = 0
-    And(a=notType, b=false, out=a);  // A-instruction sets a = 0
-    And(a=notType, b=false, out=c1); // A-instruction sets c1-c6 = 0
-    And(a=notType, b=false, out=c2);
-    And(a=notType, b=false, out=c3);
-    And(a=notType, b=false, out=c4);
-    And(a=notType, b=false, out=c5);
-    And(a=notType, b=false, out=c6);
-    And(a=notType, b=false, out=j1); // A-instruction sets j1-j3 = 0
-    And(a=notType, b=false, out=j2);
-    And(a=notType, b=false, out=j3);
+    Or(a=in[15], b=false, out=type);
+    Mux(a=false, b=in[12], sel=type, out=a);
+    Mux(a=false, b=in[11], sel=type, out=c1);
+    Mux(a=false, b=in[10], sel=type, out=c2);
+    Mux(a=false, b=in[9], sel=type, out=c3);
+    Mux(a=false, b=in[8], sel=type, out=c4);
+    Mux(a=false, b=in[7], sel=type, out=c5);
+    Mux(a=false, b=in[6], sel=type, out=c6);
+    Mux(a=false, b=in[5], sel=type, out=d1);
+    Mux(a=false, b=in[4], sel=type, out=d2);
+    Mux(a=false, b=in[3], sel=type, out=d3);
+    Mux(a=false, b=in[2], sel=type, out=j1);
+    Mux(a=false, b=in[1], sel=type, out=j2);
+    Mux(a=false, b=in[0], sel=type, out=j3);
 
 }
+
