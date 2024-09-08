@@ -1,0 +1,62 @@
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * Executes instructions written in the Hack machine language.
+ * The D and A refer to CPU registers, while M refers to the 
+ * external memory location addressed by A (Memory[A]).
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current program
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // Address of next instruction
+
+    PARTS:
+
+    // 1. Define control signals by decoding the instruction:
+    // Use the most significant bit of instruction to differentiate between A and C instructions
+    Or(a=instruction[15], b=false, out=isCInstruction);  // 1 for C-instruction, 0 for A-instruction
+
+    // 2. Registers: A register for holding addresses and D register for general purpose
+    // A-register: It is either loaded with a value (A-instruction or ALU output) or stays the same
+    ARegister(in=muxOut, load=aLoad, out=aOut);
+
+    // D-register: Used to hold data and destination for ALU computation
+    DRegister(in=aluOut, load=dLoad, out=dOut);
+
+    // Program Counter (PC): Holds the address of the next instruction
+    PC(in=aOut, load=pcLoad, inc=true, reset=reset, out=pc);
+
+    // 3. ALU: Perform computations on D register, A register or Memory[A]
+    ALU(x=dOut, y=muxIn, zx=zx, nx=nx, zy=zy, ny=ny, f=f, no=no, out=aluOut, zr=zr, ng=ng);
+
+    // 4. Mux to select between ALU computation or input from the instruction for A-register
+    Mux16(a=instruction, b=aluOut, sel=isCInstruction, out=muxOut);
+
+    // 5. Determine the address for memory by outputting A-register (used for Memory[A])
+    And16(a=aOut, b=true, out=addressM);
+
+    // 6. Control signals for writing to memory or loading registers
+    And(a=isCInstruction, b=instruction[3], out=writeM);   // Write to memory if it's a C-instruction and d3 is set
+
+    // 7. Control the loading of D and A registers
+    And(a=isCInstruction, b=instruction[4], out=dLoad);    // Load D if d2 is set
+    And(a=isCInstruction, b=instruction[5], out=aLoad);    // Load A if d1 is set
+
+    // 8. Compute if a jump should occur based on the jump bits of the instruction
+    Jump(instruction[13], instruction[14], instruction[15], zr, ng, out=jump); // Jump based on ALU flags
+
+    // 9. If a jump occurs, set pcLoad to true to load the A-register value into the PC
+    Or(a=jump, b=false, out=pcLoad);
+
+    // 10. Output the ALU result to outM if writing to memory
+    And16(a=aluOut, b=true, out=outM);
+}

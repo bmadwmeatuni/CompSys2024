@@ -1,0 +1,40 @@
+// File name: projects/05/Computer.hdl
+
+/**
+ * The HACK computer, including CPU, ROM, and RAM.
+ * When reset is 0, the program stored in the computer's ROM executes.
+ * When reset is 1, the execution of the program restarts. 
+ * The screen may show some output and the user may be able to interact 
+ * with the computer via the keyboard.
+ */
+
+CHIP Computer {
+
+    IN reset;        // Input: reset signal
+
+    PARTS:
+    
+    // Instruction memory (ROM)
+    // The ROM holds the program, and the address is provided by the program counter (PC) of the CPU.
+    ROM32K(in=pc, out=instruction);  // Fetches the current instruction from the ROM
+
+    // Data memory (RAM)
+    // The RAM holds data. The address comes from the CPU's addressM output.
+    RAM16K(in=outM, load=writeM, address=addressM, out=inM);  // RAM for data storage
+
+    // Screen memory mapped to specific address in RAM
+    Screen(in=outM, load=writeM, address=addressM, out=screenOut);  // Screen memory for visual output
+
+    // Keyboard for user interaction
+    Keyboard(out=keyboardOut);  // Keyboard for capturing key presses
+
+    // CPU
+    // The CPU executes instructions, and interacts with both ROM and RAM.
+    CPU(inM=inM,         // Data input from RAM (Memory[A])
+        instruction=instruction,  // Instruction fetched from ROM
+        reset=reset,     // Reset signal
+        outM=outM,       // Data output to RAM (to Memory[A])
+        writeM=writeM,   // Write enable for RAM
+        addressM=addressM, // Memory address to read/write (A register)
+        pc=pc);          // Program counter for fetching the next instruction
+}
