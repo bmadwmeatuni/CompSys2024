@@ -1,19 +1,3 @@
-// File name: Decode.hdl
-
-/**
- * The instruction decoder determines the type of instruction (A-instruction or C-instruction)
- * and decodes those instructions.
- * The input `in[16]` is the instruction to be decoded.
- * The outputs are used as follows:
- *   type:      0 if A-instruction, 1 if C-instruction. 
- *   a:         Determines whether the ALU input uses A (0) or Memory[A] (1) (bit 12 in C-instruction)
- *   c1 .. c6:  Control bits for the ALU operation (bits 11-6 in C-instruction)
- *   d1, d2, d3:  Destination bits (bits 5-3 in C-instruction)
- *   j1, j2, j3:  Jump bits (bits 2-0 in C-instruction)
- * For A-instructions, d1 should be 1, all other outputs should be 0.
- * For C-instructions, outputs should correspond to their bits in the C-instruction.
- */
-
 CHIP Decode {
 
     IN  in[16];             // instruction to decode
@@ -24,21 +8,46 @@ CHIP Decode {
         d1, d2, d3,         // Destination bits (from bits 5-3 in C-instruction)
         j1, j2, j3;         // Jump bits (from bits 2-0 in C-instruction)
 
-PARTS:
-    Or(a=in[15], b=false, out=type);
-    Mux(a=false, b=in[12], sel=type, out=a);
-    Mux(a=false, b=in[11], sel=type, out=c1);
-    Mux(a=false, b=in[10], sel=type, out=c2);
-    Mux(a=false, b=in[9], sel=type, out=c3);
-    Mux(a=false, b=in[8], sel=type, out=c4);
-    Mux(a=false, b=in[7], sel=type, out=c5);
-    Mux(a=false, b=in[6], sel=type, out=c6);
-    Mux(a=false, b=in[5], sel=type, out=d1);
-    Mux(a=false, b=in[4], sel=type, out=d2);
-    Mux(a=false, b=in[3], sel=type, out=d3);
-    Mux(a=false, b=in[2], sel=type, out=j1);
-    Mux(a=false, b=in[1], sel=type, out=j2);
-    Mux(a=false, b=in[0], sel=type, out=j3);
+    PARTS:
+    // Determine if the instruction is A-type (type = 0) or C-type (type = 1)
+    // type is directly connected to the most significant bit (in[15])
+    And(a=in[15], b=true, out=type);
 
+    // For C-instructions, pass the respective instruction bits to outputs when type is 1
+    And(a=in[12], b=type, out=a);     // ALU A/M select
+
+    And(a=in[11], b=type, out=c1);    // ALU control bits (bits 11-6)
+    And(a=in[10], b=type, out=c2);
+    And(a=in[9], b=type, out=c3);
+    And(a=in[8], b=type, out=c4);
+    And(a=in[7], b=type, out=c5);
+    And(a=in[6], b=type, out=c6);
+
+    // Destination bits (bits 5-3 in C-instruction)
+    And(a=in[5], b=type, out=d1);
+    And(a=in[4], b=type, out=d2);
+    And(a=in[3], b=type, out=d3);
+
+    // Jump bits (bits 2-0 in C-instruction)
+    And(a=in[2], b=type, out=j1);
+    And(a=in[1], b=type, out=j2);
+    And(a=in[0], b=type, out=j3);
+
+    // For A-instructions (type = 0), set d1 = 1 and all other control signals to 0
+    Not(in=type, out=notType);
+    And(a=notType, b=true, out=d1);  // A-instruction sets d1 = 1
+
+    // All other outputs should be 0 for A-instructions
+    And(a=false, b=notType, out=d2);
+    And(a=false, b=notType, out=d3);
+    And(a=false, b=notType, out=a);
+    And(a=false, b=notType, out=c1);
+    And(a=false, b=notType, out=c2);
+    And(a=false, b=notType, out=c3);
+    And(a=false, b=notType, out=c4);
+    And(a=false, b=notType, out=c5);
+    And(a=false, b=notType, out=c6);
+    And(a=false, b=notType, out=j1);
+    And(a=false, b=notType, out=j2);
+    And(a=false, b=notType, out=j3);
 }
-
