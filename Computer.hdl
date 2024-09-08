@@ -1,40 +1,29 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
 // File name: projects/05/Computer.hdl
 
 /**
- * The HACK computer, including CPU, ROM, and RAM.
- * When reset is 0, the program stored in the computer's ROM executes.
- * When reset is 1, the execution of the program restarts. 
- * The screen may show some output and the user may be able to interact 
- * with the computer via the keyboard.
+ * The Computer chip, i.e. the top-most chip of the Hack architecture.
+ * The Computer chip consists of CPU, ROM and RAM chip-parts.
+ * It is assumed that the ROM is pre-loaded with some Hack program.
+ * The Computer chip has a single 1-bit input, named "reset".
+ * When reset is 0, the stored program starts executing.
+ * When reset is 1, the program's execution restarts. 
+ * Thus, to start a program’s execution, reset must be pushed "up" (1)
+ * and "down" (0). From this point onward the user is at the mercy of 
+ * the software. In particular, depending on the program loaded into
+ * the computer, the screen may show some output and the user may be 
+ * expected to interact with the computer via the keyboard.
  */
 
 CHIP Computer {
 
-    IN reset;        // Input: reset signal
+    IN reset;
 
     PARTS:
-    
-    // Instruction memory (ROM)
-    // The ROM holds the program, and the address is provided by the program counter (PC) of the CPU.
-    ROM32K(in=pc, out=instruction);  // Fetches the current instruction from the ROM
-
-    // Data memory (RAM)
-    // The RAM holds data. The address comes from the CPU's addressM output.
-    RAM16K(in=outM, load=writeM, address=addressM, out=inM);  // RAM for data storage
-
-    // Screen memory mapped to specific address in RAM
-    Screen(in=outM, load=writeM, address=addressM, out=screenOut);  // Screen memory for visual output
-
-    // Keyboard for user interaction
-    Keyboard(out=keyboardOut);  // Keyboard for capturing key presses
-
-    // CPU
-    // The CPU executes instructions, and interacts with both ROM and RAM.
-    CPU(inM=inM,         // Data input from RAM (Memory[A])
-        instruction=instruction,  // Instruction fetched from ROM
-        reset=reset,     // Reset signal
-        outM=outM,       // Data output to RAM (to Memory[A])
-        writeM=writeM,   // Write enable for RAM
-        addressM=addressM, // Memory address to read/write (A register)
-        pc=pc);          // Program counter for fetching the next instruction
+    ROM32K(address=pc, out=instruction);
+    CPU(inM=memOut, instruction=instruction, reset=reset, outM=outM, 
+        writeM=writeM, addressM=addressM, pc=pc);
+    Memory(in=outM, load=writeM, address=addressM, out=memOut);
 }

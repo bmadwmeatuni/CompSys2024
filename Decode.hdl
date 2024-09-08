@@ -1,69 +1,60 @@
-// File name: Decode.hdl
-
-/**
- * The instruction decoder determines the type of instruction (A-instruction or C-instruction)
- * and decodes those instructions.
- * The input `in[16]` is the instruction to be decoded.
- * The outputs are used as follows:
- *   type:      0 if A-instruction, 1 if C-instruction. 
- *   a:         Determines whether the ALU input uses A (0) or Memory[A] (1) (bit 12 in C-instruction)
- *   c1 .. c6:  Control bits for the ALU operation (bits 11-6 in C-instruction)
- *   d1, d2, d3:  Destination bits (bits 5-3 in C-instruction)
- *   j1, j2, j3:  Jump bits (bits 2-0 in C-instruction)
- * For A-instructions, d1 should be 1, all other outputs should be 0.
- * For C-instructions, outputs should correspond to their bits in the C-instruction.
- */
-
 CHIP Decode {
 
-    IN  in[16];             // instruction to decode
+    IN  instruction[16]; // Instruction for execution
+    OUT i,         // i bit (0: A instruction, 1: C instruction)
+        value[15], // value of A instruction
+        a,         // a bit (0: ALU execute A register, 1: ALU execute Memory)
+        zx,        // if zx then x=0
+        nx,        // if nx then x=!x
+        zy,        // if zy then y=0
+        ny,        // if ny then y=!y
+        f,         // if f then then out=x+y else out=x&y
+        no,        // if no then out=!out
+        da,        // dest flag for A register
+        dd,        // dest flag for D register
+        dm,        // dest flag for Memory
+        jg,        // jump if out > 0
+        je,        // jump if out = 0
+        jl;        // jump if out < 0
 
-    OUT type,               // Instruction type (0 for A-instruction, 1 for C-instruction)
-        a,                  // ALU A/M select (from bit 12 in C-instruction)
-        c1, c2, c3, c4, c5, c6,  // Control bits for ALU (from bits 11-6 in C-instruction)
-        d1, d2, d3,         // Destination bits (from bits 5-3 in C-instruction)
-        j1, j2, j3;         // Jump bits (from bits 2-0 in C-instruction)
+    PARTS:
+    And (a=true, b=instruction[15], out=i);
 
-PARTS:
-    // Determine if the instruction is A-type (type = 0) or C-type (type = 1)
-    Or(a=in[15], b=false, out=type);  // If bit 15 is 1, it's a C-instruction (type = 1)
+    Not (in=instruction[15], out=ni);
+    And (a=ni, b=instruction[0], out=value[0]);
+    And (a=ni, b=instruction[1], out=value[1]);
+    And (a=ni, b=instruction[2], out=value[2]);
+    And (a=ni, b=instruction[3], out=value[3]);
+    And (a=ni, b=instruction[4], out=value[4]);
+    And (a=ni, b=instruction[5], out=value[5]);
+    And (a=ni, b=instruction[6], out=value[6]);
+    And (a=ni, b=instruction[7], out=value[7]);
+    And (a=ni, b=instruction[8], out=value[8]);
+    And (a=ni, b=instruction[9], out=value[9]);
+    And (a=ni, b=instruction[10], out=value[10]);
+    And (a=ni, b=instruction[11], out=value[11]);
+    And (a=ni, b=instruction[12], out=value[12]);
+    And (a=ni, b=instruction[13], out=value[13]);
+    And (a=ni, b=instruction[14], out=value[14]);
 
-    // For C-instructions, extract the control bits
-    And(a=type, b=in[12], out=a);     // ALU A/M bit (bit 12)
-    
-    // ALU control bits (bits 11-6 in C-instruction)
-    And(a=type, b=in[11], out=c1);
-    And(a=type, b=in[10], out=c2);
-    And(a=type, b=in[9], out=c3);
-    And(a=type, b=in[8], out=c4);
-    And(a=type, b=in[7], out=c5);
-    And(a=type, b=in[6], out=c6);
+    // a
+    And (a=instruction[15], b=instruction[12], out=a);
 
-    // Destination bits (bits 5-3 in C-instruction)
-    And(a=type, b=in[5], out=d1);
-    And(a=type, b=in[4], out=d2);
-    And(a=type, b=in[3], out=d3);
+    // c
+    And (a=instruction[15], b=instruction[11], out=zx); // c1
+    And (a=instruction[15], b=instruction[10], out=nx); // c2
+    And (a=instruction[15], b=instruction[9], out=zy);  // c3
+    And (a=instruction[15], b=instruction[8], out=ny);  // c4
+    And (a=instruction[15], b=instruction[7], out=f);   // c5
+    And (a=instruction[15], b=instruction[6], out=no);  // c6
 
-    // Jump bits (bits 2-0 in C-instruction)
-    And(a=type, b=in[2], out=j1);
-    And(a=type, b=in[1], out=j2);
-    And(a=type, b=in[0], out=j3);
+    // d
+    And (a=instruction[15], b=instruction[5], out=da); // d1
+    And (a=instruction[15], b=instruction[4], out=dd); // d2
+    And (a=instruction[15], b=instruction[3], out=dm); // d3
 
-    // For A-instructions, d1 is set to 1, and all other outputs are 0
-    Not(in=type, out=notType); // notType is 1 for A-instructions
-    
-    And(a=notType, b=true, out=d1);  // A-instruction sets d1 = 1
-    And(a=notType, b=false, out=d2); // A-instruction sets d2 = 0
-    And(a=notType, b=false, out=d3); // A-instruction sets d3 = 0
-    And(a=notType, b=false, out=a);  // A-instruction sets a = 0
-    And(a=notType, b=false, out=c1); // A-instruction sets c1-c6 = 0
-    And(a=notType, b=false, out=c2);
-    And(a=notType, b=false, out=c3);
-    And(a=notType, b=false, out=c4);
-    And(a=notType, b=false, out=c5);
-    And(a=notType, b=false, out=c6);
-    And(a=notType, b=false, out=j1); // A-instruction sets j1-j3 = 0
-    And(a=notType, b=false, out=j2);
-    And(a=notType, b=false, out=j3);
-
+    // j
+    And (a=instruction[15], b=instruction[2], out=jl); // j1
+    And (a=instruction[15], b=instruction[1], out=je); // j2
+    And (a=instruction[15], b=instruction[0], out=jg); // j3
 }
